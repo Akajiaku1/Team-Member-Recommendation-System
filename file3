@@ -1,0 +1,59 @@
+# team_recommender_app_embeddings.py
+
+import streamlit as st
+import pandas as pd
+from sentence_transformers import SentenceTransformer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# Load SentenceTransformer model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# --- Synthetic Team Member Data ---
+team_members = pd.DataFrame({
+    'name': ['Alice', 'Bob', 'Charlie', 'Diana', 'Ethan'],
+    'skills': [
+        'python machine-learning data-science',
+        'java spring backend api-development',
+        'react javascript frontend ui-ux',
+        'sql data-analysis visualization',
+        'cloud aws devops docker kubernetes'
+    ],
+    'past_projects': [
+        'built ML models for sales prediction',
+        'developed RESTful APIs for ecommerce',
+        'created UI for a healthcare dashboard',
+        'analyzed survey data for marketing',
+        'deployed cloud infrastructure for fintech'
+    ]
+})
+team_members['profile'] = team_members['skills'] + ' ' + team_members['past_projects']
+
+# --- Streamlit UI ---
+st.title("🧠 Semantic Team Member Recommendation System")
+st.markdown("Uses **SentenceTransformer Embeddings** for smarter matching")
+
+st.subheader("Enter New Project Details:")
+project_title = st.text_input("Project Title", "AI-Powered Marketing Dashboard")
+project_desc = st.text_area("Project Description", "Develop a dashboard with ML and interactive UI for marketing analytics")
+required_skills = st.text_input("Required Skills", "python machine-learning data-visualization dashboard ui")
+
+if st.button("Find Recommendations"):
+    project_profile = required_skills + ' ' + project_desc
+
+    # Encode profiles
+    member_profiles = team_members['profile'].tolist()
+    embeddings = model.encode(member_profiles + [project_profile])
+
+    # Compute similarity
+    project_embedding = embeddings[-1].reshape(1, -1)
+    member_embeddings = embeddings[:-1]
+    similarities = cosine_similarity(project_embedding, member_embeddings).flatten()
+
+    # Add scores and display
+    team_members['match_score'] = similarities
+    recommended = team_members.sort_values(by='match_score', ascending=False)
+
+    st.subheader("Top Recommended Team Members:")
+    st.dataframe(recommended[['name', 'skills', 'match_score']].reset_index(drop=True))
+
+    st.success("✅ Recommendations generated using deep semantic understanding.")

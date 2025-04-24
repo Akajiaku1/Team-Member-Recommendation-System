@@ -1,0 +1,52 @@
+import pandas as pd
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+# Step 1: Generate synthetic team member profiles
+team_members = pd.DataFrame({
+    'name': ['Alice', 'Bob', 'Charlie', 'Diana', 'Ethan'],
+    'skills': [
+        'python machine-learning data-science',
+        'java spring backend api-development',
+        'react javascript frontend ui-ux',
+        'sql data-analysis visualization',
+        'cloud aws devops docker kubernetes'
+    ],
+    'past_projects': [
+        'built ML models for sales prediction',
+        'developed RESTful APIs for ecommerce',
+        'created UI for a healthcare dashboard',
+        'analyzed survey data for marketing',
+        'deployed cloud infrastructure for fintech'
+    ]
+})
+
+# Step 2: Define a new project with required skills
+new_project = {
+    'title': 'AI-Powered Marketing Dashboard',
+    'description': 'Develop a dashboard that integrates machine learning models and interactive UI for marketing analytics',
+    'required_skills': 'python machine-learning data-visualization dashboard ui'
+}
+
+# Step 3: Create a profile representation (combine skills and project experience)
+team_members['profile'] = team_members['skills'] + ' ' + team_members['past_projects']
+
+# Step 4: Append new project profile
+project_profile = new_project['required_skills'] + ' ' + new_project['description']
+profiles = team_members['profile'].tolist() + [project_profile]
+
+# Step 5: Vectorize using TF-IDF
+vectorizer = TfidfVectorizer()
+profile_vectors = vectorizer.fit_transform(profiles)
+
+# Step 6: Compute cosine similarity between new project and each team member
+cosine_sim = cosine_similarity(profile_vectors[-1:], profile_vectors[:-1]).flatten()
+
+# Step 7: Create recommendations
+team_members['match_score'] = cosine_sim
+recommended = team_members.sort_values(by='match_score', ascending=False)
+
+# Display recommended team members
+print("Recommended Team Members for Project:")
+print(recommended[['name', 'skills', 'match_score']])
